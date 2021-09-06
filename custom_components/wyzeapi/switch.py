@@ -46,6 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry,
     switches: List[SwitchEntity] = [WyzeSwitch(switch_service, switch) for switch in
                                     await switch_service.get_switches()]
     switches.extend([WyzeSwitch(camera_service, switch) for switch in await camera_service.get_cameras()])
+    switches.extend([WyzeCameraNotifications(camera_service) for switch in await camera_service.get_cameras()])
 
     def get_uid():
         config = configparser.ConfigParser()
@@ -140,6 +141,93 @@ class WyzeNotifications(SwitchEntity):
     async def async_update(self):
         if not self._just_updated:
             self._is_on = await self._client.notifications_are_on
+        else:
+            self._just_updated = False
+
+
+class WyzeCameraNotifications(SwitchEntity):
+
+    def turn_on(self, **kwargs: Any) -> None:
+        pass
+
+    def turn_off(self, **kwargs: Any) -> None:
+        pass
+
+    _on: bool
+    _available: bool
+    _just_updated = False
+
+    def __init__(self, service: CameraService, device: Device):
+        """Initialize a Wyze Bulb."""
+        self._device = device
+        self._service = service
+        self._device = Camera(self._device.raw_dict)
+
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {
+                (DOMAIN, self._device.mac)
+            },
+            "name": self.name + " " + "Notifications",
+            "manufacturer": "WyzeLabs",
+            "model": self._device.product_model
+        }
+
+    @property
+    def should_poll(self) -> bool:
+        return True
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._service.turn_on_notifications(self._device)
+
+        self._device.on = True
+        self._just_updated = True
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._service.turn_off_notifications(self._device)
+
+        self._device.on = False
+        self._just_updated = True
+
+    @property
+    def name(self):
+        """Return the display name of this switch."""
+        return self._device.nickname + " " + "Notifications"
+
+    @property
+    def available(self):
+        """Return the connection status of this switch"""
+        return self._device.available
+
+    @property
+    def is_on(self):
+        """Return true if switch is on."""
+        return self._device.on
+
+    @property
+    def unique_id(self):
+        return "{}-switch".format(self._device.mac)
+
+    @property
+    def device_state_attributes(self):
+        """Return device attributes of the entity."""
+        return {
+            ATTR_ATTRIBUTION: ATTRIBUTION,
+            "state": self.is_on,
+            "available": self.available,
+            "device model": self._device.product_model,
+            "mac": self.unique_id
+        }
+
+    async def async_update(self):
+        """
+        This function updates the entity
+        """
+
+        if not self._just_updated:
+            self._device = await self._service.update(self._device)
         else:
             self._just_updated = False
 
