@@ -46,7 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry,
     switches: List[SwitchEntity] = [WyzeSwitch(switch_service, switch) for switch in
                                     await switch_service.get_switches()]
     switches.extend([WyzeSwitch(camera_service, switch) for switch in await camera_service.get_cameras()])
-    switches.extend([WyzeCameraNotifications(camera_service) for switch in await camera_service.get_cameras()])
+    switches.extend([WyzeCameraNotifications(camera_service, switch) for switch in await camera_service.get_cameras()])
 
     def get_uid():
         config = configparser.ConfigParser()
