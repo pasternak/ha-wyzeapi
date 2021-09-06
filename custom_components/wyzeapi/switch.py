@@ -208,7 +208,7 @@ class WyzeCameraNotifications(SwitchEntity):
 
     @property
     def unique_id(self):
-        return "{}-switch".format(self._device.mac)
+        return "{}-notifications".format(self._device.mac)
 
     @property
     def device_state_attributes(self):
